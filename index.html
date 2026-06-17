@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AVAILABLE</title>
+<style>
+  :root {
+    --free: #16a34a;
+    --active: #dc2626;
+    --bg: #0f172a;
+    --card: #1e293b;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #334155;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 420px;
+  }
+  .status {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 28px;
+    transition: background 0.2s, color 0.2s;
+  }
+  .status.free { background: rgba(22,163,74,0.15); color: var(--free); }
+  .status.active { background: rgba(220,38,38,0.15); color: var(--active); }
+  h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+  .option {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .option:hover { border-color: var(--muted); }
+  .option.selected { border-color: #3b82f6; background: rgba(59,130,246,0.1); }
+  .option input { width: 18px; height: 18px; margin-right: 14px; cursor: pointer; accent-color: #3b82f6; }
+  .option label { font-size: 17px; cursor: pointer; flex: 1; }
+  .option.none label { color: var(--muted); font-style: italic; }
+  .hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 20px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div id="status" class="status free">FREE</div>
+    <h2>Who's using the browser?</h2>
+    <div id="options"></div>
+    <p class="hint">Select your name when you start. Choose "None" when you're done so it shows FREE again.</p>
+  </div>
+
+<script>
+  var names = ["Adrian", "Alan", "Emma", "Hannah", "Lawson", "Ryan"];
+  var STORAGE_KEY = "browser_active_user";
+  var optionsEl = document.getElementById("options");
+  var statusEl = document.getElementById("status");
+
+  function render(selected) {
+    optionsEl.innerHTML = "";
+    var entries = [{ value: "", label: "None — browser is free", none: true }];
+    names.forEach(function (n) { entries.push({ value: n, label: n, none: false }); });
+
+    entries.forEach(function (e) {
+      var wrap = document.createElement("div");
+      wrap.className = "option" + (e.none ? " none" : "") + (selected === e.value ? " selected" : "");
+      var input = document.createElement("input");
+      input.type = "radio";
+      input.name = "user";
+      input.id = "opt_" + (e.value || "none");
+      input.value = e.value;
+      input.checked = selected === e.value;
+      input.addEventListener("change", function () { setActive(e.value); });
+      var label = document.createElement("label");
+      label.htmlFor = input.id;
+      label.textContent = e.label;
+      wrap.appendChild(input);
+      wrap.appendChild(label);
+      wrap.addEventListener("click", function (ev) {
+        if (ev.target.tagName !== "INPUT") { input.checked = true; setActive(e.value); }
+      });
+      optionsEl.appendChild(wrap);
+    });
+  }
+
+  function updateDisplay(selected) {
+    if (selected) {
+      document.title = "ACTIVE: " + selected;
+      statusEl.textContent = "ACTIVE: " + selected;
+      statusEl.className = "status active";
+    } else {
+      document.title = "AVAILABLE";
+      statusEl.textContent = "AVAILABLE";
+      statusEl.className = "status free";
+    }
+  }
+
+  function setActive(value) {
+    try { localStorage.setItem(STORAGE_KEY, value); } catch (e) {}
+    updateDisplay(value);
+    render(value);
+  }
+
+  var current = "";
+  try { current = localStorage.getItem(STORAGE_KEY) || ""; } catch (e) {}
+  if (names.indexOf(current) === -1) current = "";
+  updateDisplay(current);
+  render(current);
+
+  // Pick up changes made in other tabs of the same browser
+  window.addEventListener("storage", function (e) {
+    if (e.key === STORAGE_KEY) {
+      var v = e.newValue || "";
+      if (names.indexOf(v) === -1) v = "";
+      updateDisplay(v);
+      render(v);
+    }
+  });
+</script>
+</body>
+</html>
